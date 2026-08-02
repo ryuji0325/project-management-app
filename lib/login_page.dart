@@ -79,37 +79,49 @@ class _LoginPageState extends State<LoginPage>
   Future<void> loginWithGoogle() async {
     setState(() { loading = true; error = null; });
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId: kIsWeb ? '897744544653-hcj4st0a27be6rkccdrtlc1dgj13obat.apps.googleusercontent.com' : null,
-      );
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      UserCredential cred;
 
-      if (googleUser == null) {
-        setState(() => loading = false);
-        return; // Operator membatalkan peranti login
+      if (kIsWeb) {
+        // Pada Web (GitHub Pages / Localhost): Gunakan signInWithPopup Firebase Auth secara terus
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        cred = await FirebaseAuth.instance.signInWithPopup(googleProvider);
+      } else {
+        // Pada Mobile (Android / iOS): Gunakan GoogleSignIn SDK tempatan
+        final GoogleSignIn googleSignIn = GoogleSignIn();
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+        if (googleUser == null) {
+          setState(() => loading = false);
+          return; // Operator membatalkan peranti login
+        }
+
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+        final OAuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        cred = await FirebaseAuth.instance.signInWithCredential(credential);
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final UserCredential cred = await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = cred.user;
+      if (user == null) {
+        throw Exception("Pengesahan log masuk Google gagal. Data pengguna tidak ditemui.");
+      }
 
       // Sinkronisasi kluster / Semakan profile wujud (Idempotent tracking)
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(cred.user!.uid).get();
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       if (!userDoc.exists) {
-        await FirebaseFirestore.instance.collection('users').doc(cred.user!.uid).set({
-          'uid': cred.user!.uid,
-          'username': cred.user!.displayName ?? googleUser.displayName ?? 'Unnamed Node',
-          'email': cred.user!.email ?? googleUser.email,
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'username': user.displayName ?? 'Unnamed Node',
+          'email': user.email ?? '',
           'phone': '',
           'department': 'Unassigned Pool',
           'position': 'Operational Operator',
           'role': 'Staff',
-          'photoUrl': cred.user!.photoURL ?? googleUser.photoUrl ?? '',
+          'photoUrl': user.photoURL ?? '',
           'createdAt': FieldValue.serverTimestamp(),
         });
       }

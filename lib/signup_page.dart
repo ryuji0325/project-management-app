@@ -98,40 +98,52 @@ class _SignUpPageState extends State<SignUpPage> {
       _error = null;
     });
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId: kIsWeb ? '897744544653-hcj4st0a27be6rkccdrtlc1dgj13obat.apps.googleusercontent.com' : null,
-      );
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      UserCredential cred;
 
-      if (googleUser == null) {
-        setState(() => _loading = false);
-        return; // Pengguna membatalkan operasi pendaftaran
+      if (kIsWeb) {
+        // Pada Web (GitHub Pages / Localhost): Gunakan signInWithPopup Firebase Auth secara terus
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        cred = await FirebaseAuth.instance.signInWithPopup(googleProvider);
+      } else {
+        // Pada Mobile (Android / iOS): Gunakan GoogleSignIn SDK tempatan
+        final GoogleSignIn googleSignIn = GoogleSignIn();
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+        if (googleUser == null) {
+          setState(() => _loading = false);
+          return; // Pengguna membatalkan operasi pendaftaran
+        }
+
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+        final OAuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        cred = await FirebaseAuth.instance.signInWithCredential(credential);
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final UserCredential cred = await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = cred.user;
+      if (user == null) {
+        throw Exception("Pengesahan pendaftaran Google gagal. Data pengguna tidak ditemui.");
+      }
 
       // Semakan perlindungan data (Idempotent check) untuk mengelakkan overwriting profile
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(cred.user!.uid).get();
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
 
       if (!userDoc.exists) {
-        await FirebaseFirestore.instance.collection('users').doc(cred.user!.uid).set({
-          'uid': cred.user!.uid,
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'uid': user.uid,
           'username': _usernameCtrl.text.trim().isNotEmpty 
               ? _usernameCtrl.text.trim() 
-              : (cred.user!.displayName ?? googleUser.displayName ?? 'Unnamed Node'),
-          'email': cred.user!.email ?? googleUser.email,
+              : (user.displayName ?? 'Unnamed Node'),
+          'email': user.email ?? '',
           'phone': _phoneCtrl.text.trim().isNotEmpty ? _phoneCtrl.text.trim() : '',
           'department': _deptCtrl.text.trim().isNotEmpty ? _deptCtrl.text.trim() : 'Unassigned Pool',
           'position': _positionCtrl.text.trim().isNotEmpty ? _positionCtrl.text.trim() : 'Operational Operator',
           'role': _role,
-          'photoUrl': cred.user!.photoURL ?? googleUser.photoUrl ?? '',
+          'photoUrl': user.photoURL ?? '',
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -140,9 +152,9 @@ class _SignUpPageState extends State<SignUpPage> {
         Navigator.pushReplacementNamed(context, '/dashboard');
       }
     } on FirebaseAuthException catch (e) {
-      setState(() { _error = e.message ?? e.toString(); });
+      setState(() => _error = e.message ?? e.toString());
     } catch (e) {
-      setState(() { _error = "Google Sign Up gagal: ${e.toString().replaceAll('Exception: ', '')}"; });
+      setState(() => _error = "Pendaftaran Google gagal: ${e.toString().replaceAll('Exception: ', '')}");
     } finally {
       if (mounted) setState(() => _loading = false);
     }

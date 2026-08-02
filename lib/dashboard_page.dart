@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'project_detail_page.dart';
-import 'new_project_page.dart';
 import 'global_finance_stats_page.dart';
 import 'main.dart'; // Mengimport tokens & GlassContainer dari main.dart
 import 'services/database_service.dart';
@@ -632,12 +631,8 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
         return InkWell(
           onTap: () {
             if (index == 0) {
-              // Menghala terus ke halaman Add Project (Tab index 2 atau route NewProjectPage)
+              // Tukar tab terus ke halaman Add Project (Tab 2) tanpa membuka page bertindih
               mainTabNotifier.value = 2;
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NewProjectPage()),
-              );
             } else if (index == 1) {
               _showTransferSheet();
             } else if (index == 2) {

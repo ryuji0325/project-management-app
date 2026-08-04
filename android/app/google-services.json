@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "897744544653",
+    "project_id": "uniti-x-project-management",
+    "storage_bucket": "uniti-x-project-management.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:897744544653:android:6d6a9f1b48f41c659b93c4",
+        "android_client_info": {
+          "package_name": "com.example.unix_pm1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "897744544653-hgeh78rsl0blc1gi1riieer9f4hjrvrg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.unix_pm1",
+            "certificate_hash": "ebbc82f6da1a34f3b9a86db9f271fc4b932b93b3"
+          }
+        },
+        {
+          "client_id": "897744544653-hcj4st0a27be6rkccdrtlc1dgj13obat.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCy5bjmxoD0gLS-QtUdJSYDAcLdOV8EJc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "897744544653-hcj4st0a27be6rkccdrtlc1dgj13obat.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
